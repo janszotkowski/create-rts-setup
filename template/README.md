@@ -16,7 +16,7 @@ yarn install
 ### Running the development server:
 
 ```bash
-yarn start
+yarn dev
 ```
 
 This will start the development server using `rsbuild`.
