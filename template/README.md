@@ -44,7 +44,7 @@ In the project, you can run:
 
 - `yarn dev` - Starts the development server.
 - `yarn lint` - Lints your TypeScript files using ESLint.
-- `yarn stylelint` - Checks your styles using Stylelint.
+- `yarn lint:style` - Checks your styles using Stylelint.
 
 ## TypeScript Configuration
 

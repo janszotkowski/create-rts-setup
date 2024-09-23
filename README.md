@@ -56,7 +56,7 @@ Inside your project, you can run the following scripts:
 
 - `yarn dev` - Starts the development server using `rsbuild`.
 - `yarn lint` - Runs ESLint to lint the `.ts` and `.tsx` files.
-- `yarn stylelint` - Runs Stylelint to check your styles.
+- `yarn lint:style` - Runs Stylelint to check your styles.
 
 ## Customization
 
