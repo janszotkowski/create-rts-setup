@@ -1,0 +1,18 @@
+{
+  "name": "create-rts-kit",
+  "version": "1.0.0",
+  "description": "Template for React, TypeScript, ESLint, Stylelint and rsbuild.",
+  "bin": {
+    "create-rts-kit": "./index.js"
+  },
+  "keywords": [
+    "template",
+    "react",
+    "typescript",
+    "eslint",
+    "stylelint",
+    "rsbuild"
+  ],
+  "author": "Jan Szotkowski",
+  "license": "MIT"
+}
