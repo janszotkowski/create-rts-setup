@@ -20,7 +20,7 @@ You can create a new project using this template with either `npx` or `yarn`.
 ```bash
 npx create-rts-kit my-app
 cd my-app
-yarn install
+npm install
 ```
 
 ### Using `yarn`:

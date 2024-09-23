@@ -2,6 +2,13 @@
   "name": "create-rts-kit",
   "version": "1.0.0",
   "description": "Template for React, TypeScript, ESLint, Stylelint and rsbuild.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/janszotkowski/create-rts-setup.git"
+  },
+  "bugs": {
+    "url": "https://github.com/janszotkowski/create-rts-setup/issues"
+  },
   "bin": {
     "create-rts-kit": "./index.js"
   },
