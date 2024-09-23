@@ -1,6 +1,6 @@
 {
   "name": "create-rts-kit",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Template for React, TypeScript, ESLint, Stylelint and rsbuild.",
   "repository": {
     "type": "git",
