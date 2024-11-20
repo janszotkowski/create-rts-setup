@@ -1111,6 +1111,11 @@ eslint-plugin-import@^2.30.0:
     semver "^6.3.1"
     tsconfig-paths "^3.15.0"
 
+eslint-plugin-interface-to-type@^1.0.2:
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/eslint-plugin-interface-to-type/-/eslint-plugin-interface-to-type-1.0.2.tgz#b1ce3a2b3da865a42e48c8138bcbf3f11af6c759"
+  integrity sha512-hhs8pE3h+RqDbO1ecLyOVklhclyj2A4ZEup9MSX/zd7GTRbfYBS+LsxdCAotSRZfo9nF/hcGqNbu4UMxma0B4w==
+
 eslint-plugin-jsx-a11y@^6.10.0:
   version "6.10.0"
   resolved "https://registry.yarnpkg.com/eslint-plugin-jsx-a11y/-/eslint-plugin-jsx-a11y-6.10.0.tgz#36fb9dead91cafd085ddbe3829602fb10ef28339"

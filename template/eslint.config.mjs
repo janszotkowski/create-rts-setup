@@ -6,6 +6,7 @@ import typescriptEslintParser from '@typescript-eslint/parser';
 import stylisticPlugin from '@stylistic/eslint-plugin';
 import importPlugin from 'eslint-plugin-import';
 import globals from 'globals';
+import interfaceToType from 'eslint-plugin-interface-to-type';
 
 export default {
     name: 'ESLint Config',
@@ -37,7 +38,8 @@ export default {
         '@typescript-eslint': typescriptEslintPlugin,
         'jsx-a11y': jsxA11yPlugin,
         '@stylistic': stylisticPlugin,
-        'import': importPlugin
+        'import': importPlugin,
+        'interface-to-type': interfaceToType
     },
 
     rules: {
@@ -61,6 +63,7 @@ export default {
         ],
         '@typescript-eslint/array-type': 'error',
         '@typescript-eslint/consistent-indexed-object-style': 'error',
+        'interface-to-type/prefer-type-over-interface': 'error',
 
         // React rules
         'react/react-in-jsx-scope': 'off',
