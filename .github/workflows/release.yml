@@ -1,14 +1,16 @@
-name: Release
+name: Release from template
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
     paths:
-      - 'package.json'
-      - 'yarn.lock'
-      - 'pnpm-lock.yaml'
-      - 'package-lock.json'
+      - '**/package.json'
+      - '**/pnpm-lock.yaml'
+      - '**/yarn.lock'
+      - '**/package-lock.json'
+
+permissions:
+  contents: write
 
 jobs:
   release:
@@ -17,21 +19,60 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Use Node.js
+      - name: Detect changes in template
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            template:
+              - 'template/**/package.json'
+              - 'template/**/pnpm-lock.yaml'
+              - 'template/**/yarn.lock'
+              - 'template/**/package-lock.json'
+
+      - name: Skip if no template changes
+        if: steps.changes.outputs.template != 'true'
+        run: echo "No changes in template/* – skipping release."
+
+      - name: Setup Node
+        if: steps.changes.outputs.template == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 20
           registry-url: 'https://registry.npmjs.org/'
 
-      - name: Install deps
-        run: yarn install --frozen-lockfile
+      - name: Configure git
+        if: steps.changes.outputs.template == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Bump version
+      - name: Install deps
+        if: steps.changes.outputs.template == 'true'
+        working-directory: template
+        run: |
+          if [ -f pnpm-lock.yaml ]; then
+            corepack enable
+            pnpm install --frozen-lockfile
+          elif [ -f yarn.lock ]; then
+            yarn install --frozen-lockfile
+          else
+            npm ci
+          fi
+
+      - name: Bump version (patch) and tag
+        if: steps.changes.outputs.template == 'true'
+        working-directory: template
         run: |
           npm version patch -m "chore(release): %s [skip ci]"
+          git push --follow-tags
 
-      - name: Publish
-        run: npm publish --access public
+      - name: Publish to npm
+        if: steps.changes.outputs.template == 'true'
+        working-directory: template
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public
