@@ -1,18 +1,17 @@
-name: Release (semantic-release from template)
+name: Manual Release (template → npm)
 
 on:
-  push:
-    branches: [ 'main' ]
-    paths:
-      - 'template/**'
   workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Version bump type'
+        required: true
+        default: 'patch'
+        type: choice
+        options: [patch, minor, major]
 
 permissions:
   contents: write
-
-concurrency:
-  group: release-${{ github.ref }}
-  cancel-in-progress: false
 
 jobs:
   release:
@@ -24,50 +23,78 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Node.js
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
           registry-url: 'https://registry.npmjs.org/'
-          always-auth: true
 
-      - name: Sync tag with npm (if npm > git)
+      - name: Configure git author
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+      - name: Compute next version
+        id: vcalc
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          BUMP: ${{ github.event.inputs.bump }}
         run: |
           set -euo pipefail
-          PKG_NAME=$(node -p "require('./template/package.json').name")
-          if [ -z "$PKG_NAME" ]; then
-            echo "❌ template/package.json nemá 'name'"; exit 1
-          fi
 
-          REGISTRY_VERSION=$(npm view "$PKG_NAME" version 2>/dev/null || true)
-          echo "npm registry version: ${REGISTRY_VERSION:-<none>}"
+          PKG_NAME=$(node -p "require('./template/package.json').name")
+          PKG_VERSION=$(node -p "require('./template/package.json').version || '0.0.0'")
+          echo "Package: $PKG_NAME"
+          echo "template/package.json version: $PKG_VERSION"
+
+          REGISTRY_VERSION=$(npm view "$PKG_NAME" version 2>/dev/null || echo '0.0.0')
+          echo "npm registry version: $REGISTRY_VERSION"
 
           GIT_TAG=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n1 || true)
           GIT_VERSION=${GIT_TAG#v}
-          echo "highest git tag: ${GIT_TAG:-<none>}"
+          GIT_VERSION=${GIT_VERSION:-0.0.0}
+          echo "highest git tag: ${GIT_TAG:-<none>} → $GIT_VERSION"
 
-          cmp_versions () {
-            # returns 0 if $1 > $2, 1 otherwise
-            node -e "const a='${1:-0.0.0}',b='${2:-0.0.0}';const pa=a.split('.').map(Number),pb=b.split('.').map(Number);let gt=false;for(let i=0;i<3;i++){if((pa[i]||0)>(pb[i]||0)){gt=true;break;}if((pa[i]||0)<(pb[i]||0)){gt=false;break;}}process.exit(gt?0:1)"
-          }
+          BASE=$(node -e "const vs=['$REGISTRY_VERSION','$GIT_VERSION','$PKG_VERSION'];const s=v=>v.split('.').map(Number);vs.sort((a,b)=>{const A=s(a),B=s(b);for(let i=0;i<3;i++){if(A[i]>B[i])return -1;if(A[i]<B[i])return 1}return 0});console.log(vs[0])")
+          echo "Base version: $BASE"
 
-          if [ -n "${REGISTRY_VERSION:-}" ]; then
-            if [ -z "${GIT_VERSION:-}" ] || cmp_versions "$REGISTRY_VERSION" "$GIT_VERSION"; then
-              if git rev-parse "v$REGISTRY_VERSION" >/dev/null 2>&1; then
-                echo "Tag v$REGISTRY_VERSION už existuje."
-              else
-                echo "Creating missing tag v$REGISTRY_VERSION to match npm…"
-                git tag "v$REGISTRY_VERSION"
-                git push origin "v$REGISTRY_VERSION"
-              fi
-            fi
+          NEXT=$(node -e "const [x,y,z]='$BASE'.split('.').map(Number);const t='${BUMP}';let a=x,b=y,c=z;if(t==='major'){a++;b=0;c=0}else if(t==='minor'){b++;c=0}else{c++}console.log([a,b,c].join('.'))")
+          echo "next=$NEXT" >> "$GITHUB_OUTPUT"
+          echo "Next version: $NEXT"
+
+      - name: Bump template/package.json and tag
+        run: |
+          NEXT='${{ steps.vcalc.outputs.next }}'
+
+          (cd template && npm version "$NEXT" --no-git-tag-version)
+
+          git add template/package.json
+          git commit -m "chore(release): v${NEXT} [skip ci]" || echo "No changes to commit"
+
+          if git rev-parse "v${NEXT}" >/dev/null 2>&1; then
+            echo "Tag v${NEXT} už existuje. Ukončuji…"
+            exit 1
           fi
 
-      - name: Run semantic-release
+          git tag "v${NEXT}"
+          git push
+          git push --tags
+
+      - name: Install (only if needed)
+        working-directory: template
+        run: |
+          if [ -f pnpm-lock.yaml ]; then
+            corepack enable
+            pnpm install --frozen-lockfile
+          elif [ -f yarn.lock ]; then
+            yarn install --frozen-lockfile
+          elif [ -f package-lock.json ]; then
+            npm ci
+          else
+            echo "No lockfile found, skipping install."
+          fi
+
+      - name: Publish to npm
+        working-directory: template
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npx -y semantic-release
+        run: npm publish --access public
