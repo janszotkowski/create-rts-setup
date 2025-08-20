@@ -167,7 +167,7 @@
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
 
-"@rsbuild/core@^1.0.1":
+"@rsbuild/core@1.0.5":
   version "1.0.5"
   resolved "https://registry.yarnpkg.com/@rsbuild/core/-/core-1.0.5.tgz#ce59f82c685e06c9a8771f39a64fbb0286d80e5d"
   integrity sha512-yUWs4k9X9C661P0kwe3Om1GMJKAxliXDMnBV5hHoaEuAovdp/pOG3pk2fVsRrxcwMn3i6FyMGSVB7g0WmQpeHA==
@@ -180,7 +180,7 @@
   optionalDependencies:
     fsevents "~2.3.3"
 
-"@rsbuild/plugin-react@^1.0.1":
+"@rsbuild/plugin-react@1.0.2":
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/@rsbuild/plugin-react/-/plugin-react-1.0.2.tgz#fa4b6dca101946c2c74d87f91db67d76a8133d21"
   integrity sha512-8Sa4AJ43/ift7ZW1iNMA38ZIEDXNINPa8rGI38u7b42yBgMUWBan8yDjFYAC0Gkg3lh8vCWYVQYZp0RyIS7lqA==
@@ -188,7 +188,7 @@
     "@rspack/plugin-react-refresh" "1.0.0"
     react-refresh "^0.14.2"
 
-"@rsbuild/plugin-sass@^1.0.1":
+"@rsbuild/plugin-sass@1.0.1":
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/@rsbuild/plugin-sass/-/plugin-sass-1.0.1.tgz#4a70d567956f7e972833c58507c485df7f454f93"
   integrity sha512-gybEWXc5kUAc3eur7LJRfWiG9tA5sdDUNo++Fy2pSRhVdYRMLUtKq4YOTmLCYHQ8b7vWRbmv8keqX34ynBm8Bg==
