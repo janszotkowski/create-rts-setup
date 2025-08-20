@@ -1,0 +1,37 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'package.json'
+      - 'yarn.lock'
+      - 'pnpm-lock.yaml'
+      - 'package-lock.json'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: 'https://registry.npmjs.org/'
+
+      - name: Install deps
+        run: yarn install --frozen-lockfile
+
+      - name: Bump version
+        run: |
+          npm version patch -m "chore(release): %s [skip ci]"
+
+      - name: Publish
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
