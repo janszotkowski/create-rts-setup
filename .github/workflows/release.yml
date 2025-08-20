@@ -1,14 +1,13 @@
-name: Manual Release (template → npm)
+name: Release from template
 
 on:
-  workflow_dispatch:
-    inputs:
-      bump:
-        description: 'Version bump type'
-        required: true
-        default: 'patch'
-        type: choice
-        options: [patch, minor, major]
+  push:
+    branches: [ main ]
+    paths:
+      - '**/package.json'
+      - '**/pnpm-lock.yaml'
+      - '**/yarn.lock'
+      - '**/package-lock.json'
 
 permissions:
   contents: write
@@ -23,26 +22,59 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Detect changes in template
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            template:
+              - 'template/**/package.json'
+              - 'template/**/pnpm-lock.yaml'
+              - 'template/**/yarn.lock'
+              - 'template/**/package-lock.json'
+
+      - name: Skip if no template changes
+        if: steps.changes.outputs.template != 'true'
+        run: echo "No changes in template/* – skipping release."
+
       - name: Setup Node
+        if: steps.changes.outputs.template == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 20
           registry-url: 'https://registry.npmjs.org/'
 
-      - name: Configure git author
+      - name: Configure git
+        if: steps.changes.outputs.template == 'true'
         run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Compute next version
-        id: vcalc
+      - name: Install deps
+        if: steps.changes.outputs.template == 'true'
+        working-directory: template
+        run: |
+          if [ -f pnpm-lock.yaml ]; then
+            corepack enable
+            pnpm install --frozen-lockfile
+          elif [ -f yarn.lock ]; then
+            yarn install --frozen-lockfile
+          elif [ -f package-lock.json ]; then
+            npm ci
+          else
+            echo "No lockfile found, skipping install."
+          fi
+
+      - name: Compute next version from npm/git/pkg (patch) & tag
+        if: steps.changes.outputs.template == 'true'
+        working-directory: template
         env:
-          BUMP: ${{ github.event.inputs.bump }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           set -euo pipefail
 
-          PKG_NAME=$(node -p "require('./template/package.json').name")
-          PKG_VERSION=$(node -p "require('./template/package.json').version || '0.0.0'")
+          PKG_NAME=$(node -p "require('./package.json').name")
+          PKG_VERSION=$(node -p "require('./package.json').version || '0.0.0'")
           echo "Package: $PKG_NAME"
           echo "template/package.json version: $PKG_VERSION"
 
@@ -57,43 +89,17 @@ jobs:
           BASE=$(node -e "const vs=['$REGISTRY_VERSION','$GIT_VERSION','$PKG_VERSION'];const s=v=>v.split('.').map(Number);vs.sort((a,b)=>{const A=s(a),B=s(b);for(let i=0;i<3;i++){if(A[i]>B[i])return -1;if(A[i]<B[i])return 1}return 0});console.log(vs[0])")
           echo "Base version: $BASE"
 
-          NEXT=$(node -e "const [x,y,z]='$BASE'.split('.').map(Number);const t='${BUMP}';let a=x,b=y,c=z;if(t==='major'){a++;b=0;c=0}else if(t==='minor'){b++;c=0}else{c++}console.log([a,b,c].join('.'))")
-          echo "next=$NEXT" >> "$GITHUB_OUTPUT"
+          NEXT=$(node -e "const [x,y,z]='$BASE'.split('.').map(Number);console.log([x,y,z+1].join('.'))")
           echo "Next version: $NEXT"
 
-      - name: Bump template/package.json and tag
-        run: |
-          NEXT='${{ steps.vcalc.outputs.next }}'
-
-          (cd template && npm version "$NEXT" --no-git-tag-version)
-
-          git add template/package.json
+          npm version "$NEXT" --no-git-tag-version
+          git add package.json
           git commit -m "chore(release): v${NEXT} [skip ci]" || echo "No changes to commit"
-
-          if git rev-parse "v${NEXT}" >/dev/null 2>&1; then
-            echo "Tag v${NEXT} už existuje. Ukončuji…"
-            exit 1
-          fi
-
           git tag "v${NEXT}"
-          git push
-          git push --tags
-
-      - name: Install (only if needed)
-        working-directory: template
-        run: |
-          if [ -f pnpm-lock.yaml ]; then
-            corepack enable
-            pnpm install --frozen-lockfile
-          elif [ -f yarn.lock ]; then
-            yarn install --frozen-lockfile
-          elif [ -f package-lock.json ]; then
-            npm ci
-          else
-            echo "No lockfile found, skipping install."
-          fi
+          git push --follow-tags
 
       - name: Publish to npm
+        if: steps.changes.outputs.template == 'true'
         working-directory: template
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
